@@ -1,5 +1,5 @@
 /*
- * ejabberd, Copyright (C) 2002-2013   ProcessOne
+ * ezlib, Copyright (C) 2002-2013   ProcessOne
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -39,7 +39,7 @@ typedef struct {
       ErlDrvPort port;
       z_stream *d_stream;
       z_stream *i_stream;
-} ejabberd_zlib_data;
+} ezlib_data;
 
 static void* zlib_alloc(void* data, unsigned int items, unsigned int size)
 {
@@ -51,10 +51,10 @@ static void zlib_free(void* data, void* addr)
     driver_free(addr);
 }
 
-static ErlDrvData ejabberd_zlib_drv_start(ErlDrvPort port, char *buff)
+static ErlDrvData ezlib_drv_start(ErlDrvPort port, char *buff)
 {
-   ejabberd_zlib_data *d =
-      (ejabberd_zlib_data *)driver_alloc(sizeof(ejabberd_zlib_data));
+   ezlib_data *d =
+      (ezlib_data *)driver_alloc(sizeof(ezlib_data));
    d->port = port;
 
    d->d_stream = (z_stream *)driver_alloc(sizeof(z_stream));
@@ -78,9 +78,9 @@ static ErlDrvData ejabberd_zlib_drv_start(ErlDrvPort port, char *buff)
    return (ErlDrvData)d;
 }
 
-static void ejabberd_zlib_drv_stop(ErlDrvData handle)
+static void ezlib_drv_stop(ErlDrvData handle)
 {
-   ejabberd_zlib_data *d = (ejabberd_zlib_data *)handle;
+   ezlib_data *d = (ezlib_data *)handle;
 
    deflateEnd(d->d_stream);
    driver_free(d->d_stream);
@@ -107,12 +107,12 @@ static void ejabberd_zlib_drv_stop(ErlDrvData handle)
 	 }
 
 
-static ErlDrvSSizeT ejabberd_zlib_drv_control(ErlDrvData handle,
+static ErlDrvSSizeT ezlib_drv_control(ErlDrvData handle,
 				     unsigned int command,
 				     char *buf, ErlDrvSizeT len,
 				     char **rbuf, ErlDrvSizeT rlen)
 {
-   ejabberd_zlib_data *d = (ejabberd_zlib_data *)handle;
+   ezlib_data *d = (ezlib_data *)handle;
    int err;
    int size;
    ErlDrvBinary *b;
@@ -184,17 +184,17 @@ static ErlDrvSSizeT ejabberd_zlib_drv_control(ErlDrvData handle,
 }
 
 
-ErlDrvEntry ejabberd_zlib_driver_entry = {
+ErlDrvEntry ezlib_driver_entry = {
    NULL,			/* F_PTR init, N/A */
-   ejabberd_zlib_drv_start,	/* L_PTR start, called when port is opened */
-   ejabberd_zlib_drv_stop,	/* F_PTR stop, called when port is closed */
+   ezlib_drv_start,	/* L_PTR start, called when port is opened */
+   ezlib_drv_stop,	/* F_PTR stop, called when port is closed */
    NULL,			/* F_PTR output, called when erlang has sent */
    NULL,			/* F_PTR ready_input, called when input descriptor ready */
    NULL,			/* F_PTR ready_output, called when output descriptor ready */
-   "ejabberd_zlib_drv",		/* char *driver_name, the argument to open_port */
+   "ezlib_drv",		/* char *driver_name, the argument to open_port */
    NULL,			/* F_PTR finish, called when unloaded */
    NULL,			/* handle */
-   ejabberd_zlib_drv_control,   /* F_PTR control, port_command callback */
+   ezlib_drv_control,   /* F_PTR control, port_command callback */
    NULL,			/* F_PTR timeout, reserved */
    NULL,			/* F_PTR outputv, reserved */
   /* Added in Erlang/OTP R15B: */
@@ -211,9 +211,9 @@ ErlDrvEntry ejabberd_zlib_driver_entry = {
   NULL                  /* stop_select */
 };
 
-DRIVER_INIT(ejabberd_zlib_drv) /* must match name in driver_entry */
+DRIVER_INIT(ezlib_drv) /* must match name in driver_entry */
 {
-   return &ejabberd_zlib_driver_entry;
+   return &ezlib_driver_entry;
 }
 
 
