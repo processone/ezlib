@@ -50,7 +50,9 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    {ok, {{one_for_one, 10, 1}, []}}.
+    EZlib = {ezlib, {ezlib, start_link, []},
+             permanent, brutal_kill, worker, [ezlib]},
+    {ok, {{one_for_one, 10, 1}, [EZlib]}}.
 
 %%%===================================================================
 %%% Internal functions

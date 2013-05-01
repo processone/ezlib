@@ -30,7 +30,7 @@
 
 -behaviour(gen_server).
 
--export([start/0, start_link/0, enable_zlib/2,
+-export([start_link/0, enable_zlib/2,
 	 disable_zlib/1, send/2, recv/2, recv/3, recv_data/2,
 	 setopts/2, sockname/1, peername/1, get_sockmod/1,
 	 controlling_process/2, close/1]).
@@ -51,9 +51,6 @@
 
 -export_type([zlib_socket/0]).
 
-start() ->
-    gen_server:start({local, ?MODULE}, ?MODULE, [], []).
-
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [],
 			  []).
@@ -61,8 +58,7 @@ start_link() ->
 init([]) ->
     case load_driver() of
         ok ->
-            Port = open_port({spawn, "ezlib_drv"}, [binary]),
-            {ok, Port};
+            {ok, []};
         {error, Reason} ->
             {stop, Reason}
     end.
@@ -83,7 +79,8 @@ handle_info(_, State) -> {noreply, State}.
 
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-terminate(_Reason, Port) -> Port ! {self, close}, ok.
+terminate(_Reason, _State) ->
+    ok.
 
 -spec enable_zlib(atom(), inet:socket()) -> {ok, zlib_socket()} | {error, any()}.
 
