@@ -204,7 +204,7 @@ close(#zlibsock{sockmod = SockMod, socket = Socket,
 get_so_path() ->
     case os:getenv("EJABBERD_SO_PATH") of
         false ->
-            case code:priv_dir(ezlib) of
+            case code:priv_dir(p1_zlib) of
                 {error, _} ->
                     filename:join(["priv", "lib"]);
                 Path ->
