@@ -202,17 +202,9 @@ close(#zlibsock{sockmod = SockMod, socket = Socket,
     SockMod:close(Socket), port_close(Port).
 
 get_so_path() ->
-    case os:getenv("EJABBERD_SO_PATH") of
-        false ->
-            case code:priv_dir(p1_zlib) of
-                {error, _} ->
-                    filename:join(["priv", "lib"]);
-                Path ->
-                    filename:join([Path, "lib"])
-            end;
-        Path ->
-            Path
-    end.
+    EbinDir = filename:dirname(code:which(?MODULE)),
+    AppDir = filename:dirname(EbinDir),
+    filename:join([AppDir, "priv", "lib"]).
 
 load_driver() ->
     case erl_ddll:load_driver(get_so_path(), ezlib_drv) of
