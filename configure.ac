@@ -28,6 +28,10 @@ AC_ERLANG_NEED_ERLC
 # AC_ERLANG_SUBST_ROOT_DIR
 # AC_ERLANG_SUBST_LIB_DIR
 
-PKG_CHECK_MODULES(ZLIB, [zlib], [],AC_MSG_ERROR([zlib was not found]))
+AC_CHECK_HEADER(zlib.h, [ZLIB_HEADER=yes], [], [])
 
-AC_OUTPUT(rebar.config)
+if test "x$ZLIB_HEADER" = "x"; then
+   AC_MSG_ERROR([zlib header file "zlib.h" was not found])
+fi
+
+AC_OUTPUT
