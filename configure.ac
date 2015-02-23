@@ -34,6 +34,4 @@ if test "x$ZLIB_HEADER" = "x"; then
    AC_MSG_ERROR([zlib header file "zlib.h" was not found])
 fi
 
-AC_CONFIG_FILES([rebar.config])
-
 AC_OUTPUT
