@@ -1,0 +1,5 @@
+.eunit/
+.rebar/
+ebin/
+priv/
+*.o
