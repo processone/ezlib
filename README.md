@@ -1,6 +1,7 @@
 # ezlib
 
-Native zlib driver for Erlang / Elixir
+Native zlib driver for Erlang / Elixir. This library focuses on
+compression / decompression of data streams.
 
 ## Building
 
