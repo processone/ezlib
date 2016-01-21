@@ -20,9 +20,9 @@
 %%% limitations under the License.
 %%%
 %%%----------------------------------------------------------------------
-{application, p1_zlib,
- [{description,  "zlib wrapper"},
-  {vsn,          "1.0.0"},
+{application, ezlib,
+ [{description,  "Native zlib driver for Erlang / Elixir"},
+  {vsn,          "1.0.1"},
   {modules,      []},
   {registered,   []},
   {applications, [kernel, stdlib]},
