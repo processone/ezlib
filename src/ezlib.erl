@@ -97,7 +97,8 @@ enable_zlib(SockMod, Socket) ->
 
 disable_zlib(#zlibsock{sockmod = SockMod,
 		       socket = Socket, zlibport = Port}) ->
-    port_close(Port), {SockMod, Socket}.
+    catch port_close(Port),
+    {SockMod, Socket}.
 
 -spec recv(zlib_socket(), number()) -> {ok, binary()} | {error, any()}.
 
@@ -137,9 +138,11 @@ recv_data2(ZlibSock, Packet) ->
 
 recv_data1(#zlibsock{zlibport = Port} = _ZlibSock,
 	   Packet) ->
-    case port_control(Port, ?INFLATE, Packet) of
-      <<0, In/binary>> -> {ok, In};
-      <<1, Error/binary>> -> {error, (Error)}
+    try port_control(Port, ?INFLATE, Packet) of
+	<<0, In/binary>> -> {ok, In};
+	<<1, Error/binary>> -> {error, Error}
+    catch _:badarg ->
+	    {error, einval}
     end.
 
 -spec send(zlib_socket(), iodata()) -> ok | {error, binary() | inet:posix()}.
@@ -147,9 +150,11 @@ recv_data1(#zlibsock{zlibport = Port} = _ZlibSock,
 send(#zlibsock{sockmod = SockMod, socket = Socket,
 	       zlibport = Port},
      Packet) ->
-    case port_control(Port, ?DEFLATE, Packet) of
-      <<0, Out/binary>> -> SockMod:send(Socket, Out);
-      <<1, Error/binary>> -> {error, (Error)}
+    try port_control(Port, ?DEFLATE, Packet) of
+	<<0, Out/binary>> -> SockMod:send(Socket, Out);
+	<<1, Error/binary>> -> {error, Error}
+    catch _:badarg ->
+	    {error, einval}
     end.
 
 -spec setopts(zlib_socket(), list()) -> ok | {error, inet:posix()}.
@@ -192,11 +197,13 @@ controlling_process(#zlibsock{sockmod = SockMod,
 		    Pid) ->
     SockMod:controlling_process(Socket, Pid).
 
--spec close(zlib_socket()) -> true.
+-spec close(zlib_socket()) -> ok.
 
 close(#zlibsock{sockmod = SockMod, socket = Socket,
 		zlibport = Port}) ->
-    SockMod:close(Socket), port_close(Port).
+    SockMod:close(Socket),
+    catch port_close(Port),
+    ok.
 
 get_so_path() ->
     EbinDir = filename:dirname(code:which(?MODULE)),
