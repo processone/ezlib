@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.53)
-AC_PACKAGE_VERSION(1.0.1)
-AC_INIT(ezlib, 1.0.1, [], [])
+AC_PACKAGE_VERSION(1.0.2)
+AC_INIT(ezlib, 1.0.2, [], [])
 
 # Checks for programs.
 AC_PROG_CC
