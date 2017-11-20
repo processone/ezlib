@@ -1,3 +1,7 @@
+# Version 1.0.3
+
+* Updated rebar.config.script
+
 # Version 1.0.2
 
 * Do not throw badarg exception on closed port (Evgeniy Khramtsov)
