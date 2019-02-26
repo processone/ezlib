@@ -1,3 +1,7 @@
+# Version 1.0.5
+
+* Add contribution guide
+
 # Version 1.0.4
 
 * Fix compilation with rebar3
