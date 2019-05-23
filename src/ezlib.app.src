@@ -22,7 +22,7 @@
 %%%----------------------------------------------------------------------
 {application, ezlib,
  [{description,  "Native zlib driver for Erlang / Elixir"},
-  {vsn,          "1.0.5"},
+  {vsn,          "1.0.6"},
   {modules,      []},
   {registered,   []},
   {applications, [kernel, stdlib]},
