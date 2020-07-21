@@ -1,3 +1,7 @@
+# Version 1.0.8
+
+* Fix compilation with Erlang/OTP 23.0
+
 # Version 1.0.7
 
 * Update copyright year
