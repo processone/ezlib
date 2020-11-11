@@ -1,3 +1,8 @@
+# Version 1.0.9
+
+* Exclude old OTP releases from Travis
+* Fix hex to support compiling with rebar3
+
 # Version 1.0.8
 
 * Fix compilation with Erlang/OTP 23.0
