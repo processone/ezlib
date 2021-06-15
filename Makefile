@@ -1,12 +1,15 @@
+REBAR ?= rebar
+
 all: src
 
 src:
-	rebar compile xref
+	$(REBAR) compile
 
 clean:
-	rebar clean
+	$(REBAR) clean
 
 test: all
-	rebar -v skip_deps=true eunit
+	$(REBAR) xref
+	$(REBAR) eunit
 
 .PHONY: clean src test all
