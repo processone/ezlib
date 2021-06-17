@@ -1,6 +1,8 @@
 # ezlib
 
-[![Build Status](https://travis-ci.org/processone/ezlib.svg?branch=master)](https://travis-ci.org/processone/ezlib) [![Coverage Status](https://coveralls.io/repos/processone/ezlib/badge.svg?branch=master&service=github)](https://coveralls.io/github/processone/ezlib?branch=master) [![Hex version](https://img.shields.io/hexpm/v/ezlib.svg "Hex version")](https://hex.pm/packages/)
+[![CI](https://github.com/processone/ezlib/actions/workflows/ci.yml/badge.svg)](https://github.com/processone/ezlib/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/processone/ezlib/badge.svg?branch=master&service=github)](https://coveralls.io/github/processone/ezlib?branch=master)
+[![Hex version](https://img.shields.io/hexpm/v/ezlib.svg "Hex version")](https://hex.pm/packages/ezlib)
 
 Native zlib driver for Erlang / Elixir. This library focuses on
 compression / decompression of data streams.
