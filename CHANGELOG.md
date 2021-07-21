@@ -1,3 +1,8 @@
+# Version 1.0.10
+
+* Switch from using Travis to Github Actions as CI
+* Update .gitignore
+
 # Version 1.0.9
 
 * Exclude old OTP releases from Travis
