@@ -30,15 +30,15 @@
 -export([start_link/0, enable_zlib/2,
 	 disable_zlib/1, send/2, recv/2, recv/3, recv_data/2,
 	 setopts/2, sockname/1, peername/1, get_sockmod/1,
-	 controlling_process/2, close/1]).
+	 controlling_process/2, close/1, setup_zlib/4]).
 
 %% Internal exports, call-back functions.
 -export([init/1, handle_call/3, handle_cast/2,
 	 handle_info/2, code_change/3, terminate/2]).
 
 -define(DEFLATE, 1).
-
 -define(INFLATE, 2).
+-define(SETUP, 3).
 
 -record(zlibsock, {sockmod :: atom(),
                    socket :: inet:socket(),
@@ -204,6 +204,13 @@ close(#zlibsock{sockmod = SockMod, socket = Socket,
     SockMod:close(Socket),
     catch port_close(Port),
     ok.
+
+setup_zlib(#zlibsock{zlibport = Port}, Comp, WinSize, MemLevel) ->
+    Packet = <<Comp:8, WinSize:8, MemLevel:8>>,
+    case port_control(Port, ?SETUP, Packet) of
+	<<0>> -> ok;
+	<<1, Msg/binary>> -> {error, Msg}
+    end.
 
 get_so_path() ->
     EbinDir = filename:dirname(code:which(?MODULE)),

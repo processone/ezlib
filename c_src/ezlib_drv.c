@@ -53,14 +53,7 @@ static ErlDrvData ezlib_drv_start(ErlDrvPort port, char *buff)
    ezlib_data *d =
       (ezlib_data *)driver_alloc(sizeof(ezlib_data));
    d->port = port;
-
-   d->d_stream = (z_stream *)driver_alloc(sizeof(z_stream));
-
-   d->d_stream->zalloc = zlib_alloc;
-   d->d_stream->zfree = zlib_free;
-   d->d_stream->opaque = (voidpf)0;
-
-   deflateInit(d->d_stream, Z_DEFAULT_COMPRESSION);
+   d->d_stream = 0;
 
    d->i_stream = (z_stream *)driver_alloc(sizeof(z_stream));
 
@@ -75,12 +68,29 @@ static ErlDrvData ezlib_drv_start(ErlDrvPort port, char *buff)
    return (ErlDrvData)d;
 }
 
+static int setup_deflate(ezlib_data* d, int compressionLevel, int windowBits, int memLevel) {
+  if (d->d_stream)
+    return 0;
+
+ d->d_stream = (z_stream *)driver_alloc(sizeof(z_stream));
+
+ d->d_stream->zalloc = zlib_alloc;
+ d->d_stream->zfree = zlib_free;
+ d->d_stream->opaque = (voidpf)0;
+
+ deflateInit2(d->d_stream, compressionLevel, Z_DEFLATED, windowBits, memLevel, Z_DEFAULT_STRATEGY);
+
+ return 0;
+}
+
 static void ezlib_drv_stop(ErlDrvData handle)
 {
    ezlib_data *d = (ezlib_data *)handle;
 
-   deflateEnd(d->d_stream);
-   driver_free(d->d_stream);
+   if (d->d_stream) {
+     deflateEnd(d->d_stream);
+     driver_free(d->d_stream);
+   }
 
    inflateEnd(d->i_stream);
    driver_free(d->i_stream);
@@ -91,6 +101,7 @@ static void ezlib_drv_stop(ErlDrvData handle)
 
 #define DEFLATE 1
 #define INFLATE 2
+#define CONFIGURE 3
 
 #define die_unless(cond, errstr)				\
 	 if (!(cond))						\
@@ -116,7 +127,18 @@ static ErlDrvSSizeT ezlib_drv_control(ErlDrvData handle,
 
    switch (command)
    {
+      case CONFIGURE:
+	 die_unless(len == 3 &&
+		buf[0] > 0 && buf[0] <= 9 &&
+		buf[1] >= 8 && buf[1] <= 15 &&
+		buf[2] >= 1 && buf[2] <= 8, "Invalid parameters");
+	 setup_deflate(d, buf[0], buf[1], buf[2]);
+	 b = driver_alloc_binary(1);
+	 b->orig_bytes[0] = 0;
+	 *rbuf = (char *)b;
+	 return 1;
       case DEFLATE:
+	 setup_deflate(d, Z_DEFAULT_COMPRESSION, 12, 4);
 	 size = BUF_SIZE + 1;
 	 rlen = 1;
 	 b = driver_alloc_binary(size);
@@ -151,6 +173,7 @@ static ErlDrvSSizeT ezlib_drv_control(ErlDrvData handle,
 	 *rbuf = (char *)b;
 	 return rlen;
       case INFLATE:
+	 setup_deflate(d, Z_DEFAULT_COMPRESSION, 12, 4);
 	 size = BUF_SIZE + 1;
 	 rlen = 1;
 	 b = driver_alloc_binary(size);
