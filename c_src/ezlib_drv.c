@@ -239,7 +239,7 @@ ErlDrvEntry ezlib_driver_entry = {
   ERL_DRV_EXTENDED_MARKER,        /* extended_marker */
   ERL_DRV_EXTENDED_MAJOR_VERSION, /* major_version */
   ERL_DRV_EXTENDED_MINOR_VERSION, /* minor_version */
-  0,                    /* driver_flags */
+  ERL_DRV_FLAG_USE_PORT_LOCKING,  /* driver_flags */
   NULL,                 /* handle2 */
   NULL,                 /* process_exit */
   NULL                  /* stop_select */
