@@ -36,7 +36,7 @@
 -export([init/1, handle_call/3, handle_cast/2,
 	 handle_info/2, code_change/3, terminate/2]).
 
--export([new/0, new/3, compress/2, decompress/2]).
+-export([new/0, new/3, compress/2, decompress/2, load_nif/1]).
 
 -record(zlibsock, {sockmod :: atom(),
 		   socket :: inet:socket(),
