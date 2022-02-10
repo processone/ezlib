@@ -3,6 +3,7 @@ REBAR ?= rebar
 all: src
 
 src:
+	$(REBAR) get-deps
 	$(REBAR) compile
 
 clean:
