@@ -30,19 +30,17 @@
 -export([start_link/0, enable_zlib/2,
 	 disable_zlib/1, send/2, recv/2, recv/3, recv_data/2,
 	 setopts/2, sockname/1, peername/1, get_sockmod/1,
-	 controlling_process/2, close/1, setup_zlib/4]).
+	 controlling_process/2, close/1]).
 
 %% Internal exports, call-back functions.
 -export([init/1, handle_call/3, handle_cast/2,
 	 handle_info/2, code_change/3, terminate/2]).
 
--define(DEFLATE, 1).
--define(INFLATE, 2).
--define(SETUP, 3).
+-export([new/0, new/3, compress/2, decompress/2]).
 
 -record(zlibsock, {sockmod :: atom(),
-                   socket :: inet:socket(),
-                   zlibport :: port()}).
+		   socket :: inet:socket(),
+		   zlibport :: port()}).
 
 -type zlib_socket() :: #zlibsock{}.
 
@@ -53,11 +51,39 @@ start_link() ->
 			  []).
 
 init([]) ->
-    case load_driver() of
-        ok ->
-            {ok, []};
-        {error, Reason} ->
-            {stop, Reason}
+    case load_nif() of
+	ok ->
+	    {ok, []};
+	{error, Reason} ->
+	    {stop, Reason}
+    end.
+
+new() ->
+    erlang:nif_error(nif_not_loaded).
+
+-spec new(integer(), integer(), integer()) -> port().
+
+new(_CompressionRatio, _Window, _MemLevel) ->
+    erlang:nif_error(nif_not_loaded).
+
+compress(_State, _Data) ->
+    erlang:nif_error(nif_not_loaded).
+
+decompress(_State, _Data) ->
+    erlang:nif_error(nif_not_loaded).
+
+load_nif() ->
+    SOPath = p1_nif_utils:get_so_path(?MODULE, [ezlib], "ezlib"),
+    load_nif(SOPath).
+
+load_nif(SOPath) ->
+    case erlang:load_nif(SOPath, 0) of
+	ok ->
+	    ok;
+	{error, {Reason, Txt}} ->
+	    error_logger:error_msg("failed to load NIF ~s: ~s",
+				   [SOPath, Txt]),
+	    {error, Reason}
     end.
 
 %%% --------------------------------------------------------
@@ -82,37 +108,31 @@ terminate(_Reason, _State) ->
 -spec enable_zlib(atom(), inet:socket()) -> {ok, zlib_socket()} | {error, any()}.
 
 enable_zlib(SockMod, Socket) ->
-    case load_driver() of
-        ok ->
-            Port = open_port({spawn, "ezlib_drv"},
-                             [binary]),
-            {ok,
-             #zlibsock{sockmod = SockMod, socket = Socket,
-                       zlibport = Port}};
-        Err ->
-            Err
-    end.
+    Port = ezlib:new(),
+    {ok,
+     #zlibsock{sockmod = SockMod, socket = Socket,
+	       zlibport = Port}}.
 
 -spec disable_zlib(zlib_socket()) -> {atom(), inet:socket()}.
 
 disable_zlib(#zlibsock{sockmod = SockMod,
-		       socket = Socket, zlibport = Port}) ->
-    catch port_close(Port),
+		       socket = Socket}) ->
     {SockMod, Socket}.
 
 -spec recv(zlib_socket(), number()) -> {ok, binary()} | {error, any()}.
 
 recv(Socket, Length) -> recv(Socket, Length, infinity).
 
--spec recv(zlib_socket(), number(), timeout()) -> {ok, binary()} |
-                                                  {error, any()}.
+-spec recv(zlib_socket(), number(), timeout()) ->
+    {ok, binary()} |
+    {error, any()}.
 
 recv(#zlibsock{sockmod = SockMod, socket = Socket} =
-	 ZlibSock,
+     ZlibSock,
      Length, Timeout) ->
     case SockMod:recv(Socket, Length, Timeout) of
-      {ok, Packet} -> recv_data(ZlibSock, Packet);
-      {error, _Reason} = Error -> Error
+	{ok, Packet} -> recv_data(ZlibSock, Packet);
+	{error, _Reason} = Error -> Error
     end.
 
 -spec recv_data(zlib_socket(), iodata()) -> {ok, binary()} | {error, any()}.
@@ -122,27 +142,25 @@ recv_data(#zlibsock{sockmod = SockMod,
 	      ZlibSock,
 	  Packet) ->
     case SockMod of
-      gen_tcp -> recv_data2(ZlibSock, Packet);
-      _ ->
-	  case SockMod:recv_data(Socket, Packet) of
-	    {ok, Packet2} -> recv_data2(ZlibSock, Packet2);
-	    Error -> Error
-	  end
+	gen_tcp -> recv_data2(ZlibSock, Packet);
+	_ ->
+	    case SockMod:recv_data(Socket, Packet) of
+		{ok, Packet2} -> recv_data2(ZlibSock, Packet2);
+		Error -> Error
+	    end
     end.
 
 recv_data2(ZlibSock, Packet) ->
     case catch recv_data1(ZlibSock, Packet) of
-      {'EXIT', Reason} -> {error, Reason};
-      Res -> Res
+	{'EXIT', Reason} -> {error, Reason};
+	Res -> Res
     end.
 
 recv_data1(#zlibsock{zlibport = Port} = _ZlibSock,
 	   Packet) ->
-    try port_control(Port, ?INFLATE, Packet) of
-	<<0, In/binary>> -> {ok, In};
-	<<1, Error/binary>> -> {error, Error}
+    try ezlib:decompress(Port, Packet)
     catch _:badarg ->
-	    {error, einval}
+	{error, einval}
     end.
 
 -spec send(zlib_socket(), iodata()) -> ok | {error, binary() | inet:posix()}.
@@ -150,11 +168,11 @@ recv_data1(#zlibsock{zlibport = Port} = _ZlibSock,
 send(#zlibsock{sockmod = SockMod, socket = Socket,
 	       zlibport = Port},
      Packet) ->
-    try port_control(Port, ?DEFLATE, Packet) of
-	<<0, Out/binary>> -> SockMod:send(Socket, Out);
-	<<1, Error/binary>> -> {error, Error}
+    try ezlib:compress(Port, Packet) of
+	{ok, Compressed} -> SockMod:send(Socket, Compressed);
+	{error, _} = Err -> Err
     catch _:badarg ->
-	    {error, einval}
+	{error, einval}
     end.
 
 -spec setopts(zlib_socket(), list()) -> ok | {error, inet:posix()}.
@@ -162,32 +180,34 @@ send(#zlibsock{sockmod = SockMod, socket = Socket,
 setopts(#zlibsock{sockmod = SockMod, socket = Socket},
 	Opts) ->
     case SockMod of
-      gen_tcp -> inet:setopts(Socket, Opts);
-      _ -> SockMod:setopts(Socket, Opts)
+	gen_tcp -> inet:setopts(Socket, Opts);
+	_ -> SockMod:setopts(Socket, Opts)
     end.
 
--spec sockname(zlib_socket()) -> {ok, {inet:ip_address(), inet:port_number()}} |
-                                 {error, inet:posix()}.
+-spec sockname(zlib_socket()) ->
+    {ok, {inet:ip_address(), inet:port_number()}} |
+    {error, inet:posix()}.
 
 sockname(#zlibsock{sockmod = SockMod,
 		   socket = Socket}) ->
     case SockMod of
-      gen_tcp -> inet:sockname(Socket);
-      _ -> SockMod:sockname(Socket)
+	gen_tcp -> inet:sockname(Socket);
+	_ -> SockMod:sockname(Socket)
     end.
 
 -spec get_sockmod(zlib_socket()) -> atom().
 
 get_sockmod(#zlibsock{sockmod = SockMod}) -> SockMod.
 
--spec peername(zlib_socket()) -> {ok, {inet:ip_address(), inet:port_number()}} |
-                                 {error, inet:posix()}.
+-spec peername(zlib_socket()) ->
+    {ok, {inet:ip_address(), inet:port_number()}} |
+    {error, inet:posix()}.
 
 peername(#zlibsock{sockmod = SockMod,
 		   socket = Socket}) ->
     case SockMod of
-      gen_tcp -> inet:peername(Socket);
-      _ -> SockMod:peername(Socket)
+	gen_tcp -> inet:peername(Socket);
+	_ -> SockMod:peername(Socket)
     end.
 
 -spec controlling_process(zlib_socket(), pid()) -> ok | {error, atom()}.
@@ -204,27 +224,3 @@ close(#zlibsock{sockmod = SockMod, socket = Socket,
     SockMod:close(Socket),
     catch port_close(Port),
     ok.
-
-setup_zlib(#zlibsock{zlibport = Port}, Comp, WinSize, MemLevel) ->
-    Packet = <<Comp:8, WinSize:8, MemLevel:8>>,
-    case port_control(Port, ?SETUP, Packet) of
-	<<0>> -> ok;
-	<<1, Msg/binary>> -> {error, Msg}
-    end.
-
-get_so_path() ->
-    EbinDir = filename:dirname(code:which(?MODULE)),
-    AppDir = filename:dirname(EbinDir),
-    filename:join([AppDir, "priv", "lib"]).
-
-load_driver() ->
-    case erl_ddll:load_driver(get_so_path(), ezlib_drv) of
-        ok ->
-            ok;
-        {error, already_loaded} ->
-            ok;
-        {error, ErrorDesc} = Err ->
-            error_logger:error_msg("failed to load zlib driver: ~s~n",
-                                   [erl_ddll:format_error(ErrorDesc)]),
-            Err
-    end.
