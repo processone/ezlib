@@ -1,3 +1,9 @@
+# Version 1.0.11
+
+* Convert from driver to nif architecture
+* Add ability to configure compression setting
+* Tune default compression setting to use less memory
+
 # Version 1.0.10
 
 * Switch from using Travis to Github Actions as CI
