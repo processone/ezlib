@@ -1,3 +1,7 @@
+# Version 1.0.12
+
+* Include new .c file in hex package
+
 # Version 1.0.11
 
 * Updating p1_utils to version 1.0.25.
