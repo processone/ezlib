@@ -1,5 +1,6 @@
 # Version 1.0.11
 
+* Updating p1_utils to version 1.0.25.
 * Convert from driver to nif architecture
 * Add ability to configure compression setting
 * Tune default compression setting to use less memory
