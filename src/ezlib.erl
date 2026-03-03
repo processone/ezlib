@@ -151,9 +151,8 @@ recv_data(#zlibsock{sockmod = SockMod,
     end.
 
 recv_data2(ZlibSock, Packet) ->
-    case catch recv_data1(ZlibSock, Packet) of
-	{'EXIT', Reason} -> {error, Reason};
-	Res -> Res
+    try recv_data1(ZlibSock, Packet)
+    catch error:Reason -> {error, Reason}
     end.
 
 recv_data1(#zlibsock{zlibport = Port} = _ZlibSock,
@@ -222,5 +221,7 @@ controlling_process(#zlibsock{sockmod = SockMod,
 close(#zlibsock{sockmod = SockMod, socket = Socket,
 		zlibport = Port}) ->
     SockMod:close(Socket),
-    catch port_close(Port),
+    try port_close(Port)
+    catch _:_ -> error
+    end,
     ok.
