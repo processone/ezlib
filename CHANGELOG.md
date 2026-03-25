@@ -1,3 +1,8 @@
+# Version 1.0.16
+
+* Fix new deprecation in R29
+* Add documentation to hex package
+
 # Version 1.0.15
 
 * Updating p1_utils to version 1.0.28.
